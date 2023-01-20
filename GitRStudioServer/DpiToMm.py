@@ -79,3 +79,8 @@ number = pytesseract.image_to_string(thr, config="--psm 10")
 
 plt.imshow(mask)
 plt.show() 
+
+########### We also should detect mm or µm this can be achieved with pytesseract. but we also can guess as 
+########### high values should always be µm and low ones mm
+
+px/mm = PixelPerUnit/detectedNumber
