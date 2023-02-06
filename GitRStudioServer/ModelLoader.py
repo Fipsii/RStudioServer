@@ -5,12 +5,16 @@ import PIL as PIL
 img = PIL.Image.open("Code/model.png")
 
 ### Load_Model
-
-path = "/home/philipp/GitRStudioServer/SavedModels/MobileV2ModelefficientNetB7_17_01"
+##"/home/philipp/GitRStudioServer/SavedModels/MobileV2ModelefficientNetB7"
+path = "/home/philipp/GitRStudioServer/SavedModels/Daphnia_ModelVGG16"
 model = keras.models.load_model(path)
-
+model
+img_width = 224
+img_height = 224
+target_size = (img_width, img_height)
 #### Get the data test data 
 #### for this we load the val data wit the same seed as in the original model. We can with the same function load different images
+path = "/home/philipp/GitRStudioServer/Data_DaphniasPNG_entpackt"
 
 val_data = keras.utils.image_dataset_from_directory(path, 
                                            image_size = target_size,
@@ -100,3 +104,6 @@ for x in range(len(Saliency_maps)):
   
   #plt.imshow(Processed_Images[x].astype(np.uint8), cmap = "gray", alpha = 0.45)
   plt.show()
+
+
+keras.utils.vis_utils.plot_model(model, to_file = "EfficientNETB7.png")

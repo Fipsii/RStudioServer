@@ -1,7 +1,7 @@
 ### This file contains functions to evaluate the distances in Pixel and
 ### visualize the measured distances for control and visualization
 
-def DaphnidMeasurements(DataframewithLabelledData)
+def DaphnidMeasurements(DataframewithLabelledData):
   import numpy as np
   import pandas as pd
   #### Changing copy warning: Right now: ignored
@@ -75,3 +75,4 @@ def ShowMeasureImage(Imagepath, Dataframe):
   return("Image of" + filename + "printed")
 
 
+DaphnidMeasurements("/home/philipp//GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.csv")
