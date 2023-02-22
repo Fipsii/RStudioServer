@@ -2,11 +2,19 @@
 ######################
 
 # General idea: 1. Rotate Daphnia straight 2. Cut out Daphnia and Calculate
-# height 3. Measure from the side at height 2/3 of the Daphnia to most outer
+# height 3. Measure from the side at height 2/3 (from the bottom) of the Daphnia to most outer
 # point of the Daphnid
 
 
 ####
+
+
+### Data gets written in csv and calcualted in a last script makin all 
+### cobversions (Right now(20.02.23) part of pxtomm.py but will be seperated)
+### R_Script Simona evaluates the accuracy with chisq.test again
+### How to differentiate between Daphnias that rotate down and ones that rotate up? 
+### Eyes? If The eye has higher coordinates than the spina?
+
 def Images_list(path_to_images):
   import os as os
   Image_names = []
@@ -17,21 +25,6 @@ def Images_list(path_to_images):
       Image_names.append(os.path.join(root, name))
   return Image_names
 
-def getOrientation(pts, img):
-
-def AddtoDataFrame(BodyWidthValues)
-
-
-
-### Data gets written in csv and calcualted in a last script makin all 
-### cobversions (Right now(20.02.23) part of pxtomm.py but will be seperated)
-### R_Script Simona evaluates the accuracy with chisq.test again
-### How to differentiate between Daphnias that rotate down and ones that rotate up? 
-### Eyes? If The eye has higher coordinates than the spina?
-
-#### Versuchsraum
-Image_Names = Images_list("/home/philipp/GitRStudioServer/ImageData/SimonaAig21d")
-RotatedCutImages = RotatedImages(Image_Names)
 def RotatedImages(Imagenames):
   
   import numpy as np
@@ -58,7 +51,7 @@ def RotatedImages(Imagenames):
     # Convert image to binary mask black and white
     gray = cv2.cvtColor(nbg, cv2.COLOR_BGRA2GRAY)
     binary_mask = gray.copy()
-    binary_mask[binary_mask >0] = 255
+    binary_mask[binary_mask >50] = 255
     
     # Convert image to binary mask black and white fo eye detection
     # Problem: Eggs are also round and dark
@@ -79,6 +72,7 @@ def RotatedImages(Imagenames):
     ### falsely detected part
     
     OnlyValue = NonRightAngles(rotation)
+    print(OnlyValue)
     counting_list_of_errors.append(OnlyValue[0])
     ### How do we safe image
     
@@ -97,8 +91,6 @@ def NonRightAngles(liste):
       pass
     if len(liste) == 1:
       right_rotation = [liste[0]]
-      plt.imshow(ndimage.rotate(img, 180-int(rotation[0])))
-      plt.show()
     elif len(liste) == 0:
       right_rotation = [0]
     else: 
@@ -107,6 +99,9 @@ def NonRightAngles(liste):
     return right_rotation
 
 def getOrientation(pts, img):
+  import cv2 as cv2
+  import numpy as np
+  from math import atan2, cos, sin, sqrt, pi
   ## [pca]
   # Construct a buffer used by the pca analysis
   sz = len(pts)
@@ -143,6 +138,10 @@ def getOrientation(pts, img):
   return rotation_degree
 
 def drawAxis(img, p_, q_, color, scale):
+  import cv2 as cv2
+  import numpy as np
+  from math import atan2, cos, sin, sqrt, pi
+  
   p = list(p_)
   q = list(q_)
  
@@ -171,7 +170,85 @@ def getDaphnidlength(StraightCutDaphnids):
   ## we count from both sides to avoid needing to detect the head
   ## take every 50th row and calcualted the amount of pixel that are non-zero?
   ## do we get problem with the eye? Binary mask has no eye!
-  for x in StraightCutDaphnids:
+  line_coordinates = []
+  for x in range(0,len(RotatedCutImages)):
+    import numpy as np
+    ### Find the index row where the line is the longest
+    ### 
+    print(x)
+    columns = np.copy(RotatedCutImages[x][:, ::50]) ### take every 50th column
+    #np.shape(RotatedCutImages[0][:, ::50])
+    #np.shape(RotatedCutImages[0])
+    sum_of_columns = np.sum(columns,axis=0)
+    Longest_column, = np.where(sum_of_columns == np.amax(sum_of_columns))
+    Index_of_the_Longest_column = int(Longest_column[0])*50 ## If mutliple same values exist take the first one
     
-    rows = np.copy(StraightCutDaphnids[:, ::50])
-    sum_of_rows = np.sum(rows,axis=0)
+    ### Now we need to find the y coordinate where this line goes from 0 to some value
+    ### Therefore we extract the line out of the image
+    ### Somewhere we confuse columns and rows!!!!
+  
+    full_image = np.copy(RotatedCutImages[x])
+    full_column = full_image[:,Index_of_the_Longest_column]
+    
+    #### No I want the index of the first number of 0 and the last over 0
+    
+    firstNonZero = np.argmax(full_column>0) ### Argmax stops at first true
+    lastNonZero = len(full_column) - np.argmax(np.flip(full_column>0)) ## Flip to come from the other side
+    
+    #### Check if we have a continuus line but does it matter? Its a definition thing and dependent on how well rembg cuts out
+    #### We have to test if making a binary mask may help exculding extremities while including the body -> species dependent
+    
+    line_coordinates.append((firstNonZero,lastNonZero))
+  return line_coordinates
+  #### Plot the line into the image
+
+def DaphnidWidth(coordinates, RotatedCutImages):
+  body_width_px = []
+  for x in range(len(RotatedCutImages)):
+    upper_third = int(coordinates[x][0] + (coordinates[x][1] - coordinates[x][0]) * 1/3)
+    lower_third = int(coordinates[x][1] - (coordinates[x][1] - coordinates[x][0]) * 1/3)
+    
+    #### Get upper measurement ### We aviod a nested for loop for readability
+    ####
+    
+    row_upper_third = RotatedCutImages[x][upper_third,:]
+    row_upper_thirdLeft = np.argmax(row_upper_third > 100)
+    row_upper_thirdRight = len(row_upper_third) - np.argmax(np.flip(row_upper_third > 100))
+    upper_body_width_px = row_upper_thirdRight - row_upper_thirdLeft
+    
+    row_lower_third = RotatedCutImages[x][lower_third,:]
+    row_lower_thirdLeft = np.argmax(row_lower_third > 100)
+    row_lower_thirdRight = len(row_lower_third) - np.argmax(np.flip(row_lower_third > 100))
+    lower_body_width_px = row_lower_thirdRight - row_lower_thirdLeft
+    
+    if lower_body_width_px >= upper_body_width_px:
+      body_width_px.append(lower_body_width_px)
+    else:
+      body_width_px.append(upper_body_width_px)
+    #### Draw a symbolic image
+    from matplotlib import pyplot
+    plt.clf()
+    plt.imshow(RotatedCutImages[x])
+    plt.plot(row_lower_thirdLeft, lower_third, row_lower_thirdRight, lower_third, marker = 'o', ls = '-')
+    plt.plot(row_upper_thirdLeft, upper_third, row_upper_thirdRight, upper_third, marker = 'x', ls = '-')
+    plt.show()
+    
+  return body_width_px
+    #### PRELIMINAIRY: We take the longer line as width. Optimally we would take the line
+    ## closer to the eye (Furca movement). We also need to consider extremities incresing width
+    ## as well as intestines being 0 values and fragments 
+    ## All of this depends on rembg and preprocessing of the image -> we could set small islands of pixels 0
+    ## Binary masks? An Oval containing mos of a Daphnid
+    ## And how to measure width do we take most outer point or not?
+    ## Even after that we have to check variance which results from the spina being included or not
+
+Image_Names = Images_list("/home/philipp/GitRStudioServer/ImageData/SimonaAig21d")
+RotatedCutImages = RotatedImages(Image_Names)
+line_cor = getDaphnidlength(RotatedCutImages)
+body_widths = DaphnidWidth(line_cor, RotatedCutImages)
+
+import cv2 as cv2
+img_S = cv2.imread(Image_Names[98])
+plt.clf()
+plt.imshow(img_S)
+plt.show()
