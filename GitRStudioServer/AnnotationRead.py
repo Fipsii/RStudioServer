@@ -3,8 +3,8 @@ import json as json
 import pandas as pd
 ### Read json into a dict
 
-#filename = "/home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.json"
-filename = "/home/philipp/GitRStudioServer/annotations3.json"
+filename = "/home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.json"
+#filename = "/home/philipp/GitRStudioServer/annotations.json"
 def JsonToMeasurement(filename):
   
   data = json.load(open(filename))
@@ -48,10 +48,13 @@ def JsonToMeasurement(filename):
   CompleteDataframe.insert(3, 'Imagewidth', Imageframe['width']) 
   CompleteDataframe.insert(4, 'Imageheight', Imageframe['height']) 
   
+  List_image_id = []
+  ### save only the name of the image not the path as image_id
   for x in range(len(CompleteDataframe["image_id"])):
-    CompleteDataframe["image_id"][x] = CompleteDataframe["image_id"][x].split("/")[-1]
+    List_image_id.append(CompleteDataframe["image_id"][x].split("/")[-1])
+  
   ## save the data
- 
+  CompleteDataframe["image_id"] = List_image_id
   CompleteDataframe.to_csv(filename[:-5] + ".csv", index = False)
   
   return(CompleteDataframe,"Here ya go")
