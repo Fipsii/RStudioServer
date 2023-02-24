@@ -3,8 +3,8 @@ import json as json
 import pandas as pd
 ### Read json into a dict
 
-filename = "/home/philipp//GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.json"
-
+#filename = "/home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.json"
+filename = "/home/philipp/GitRStudioServer/annotations3.json"
 def JsonToMeasurement(filename):
   
   data = json.load(open(filename))
@@ -29,14 +29,14 @@ def JsonToMeasurement(filename):
 
   Annotationframe[['Xmin','Ymin','bboxWidth','bboxHeight']] = pd.DataFrame(Annotationframe.bbox.tolist(), index= Annotationframe.index)
 
-  ### Drop useless coloumns
-
-  Annotationframe = Annotationframe.drop(columns = ["segmentation", "iscrowd", "attributes", "bbox"])
-
+  ### Make useful columns into a new data frame
+  print(Annotationframe.head())
+  print(Annotationframe.head())
+  SmallFrame = Annotationframe[["id", "image_id","category_id","area","Xmin","Ymin","bboxWidth","bboxHeight"]]
   #### Make everything to one row per individual
   count = 0
   for y in Labelframe["name"]:
-    temp = Annotationframe[Annotationframe["category_id"] == y] 
+    temp = SmallFrame[SmallFrame["category_id"] == y] 
     temp.columns = ['id_'+ str(y), 'image_id', 'category_id_'+ str(y),'area_'+ str(y),'Xmin_'+ str(y),'Ymin_'+ str(y),'bboxWidth_'+ str(y),'bboxHeight_'+ str(y)]
     count += 1
     print(count)
