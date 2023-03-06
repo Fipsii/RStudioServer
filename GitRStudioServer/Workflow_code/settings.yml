@@ -1,0 +1,16 @@
+### The .yaml config for Daphnia measurement and object detection workflow
+
+Yaml_save_path: /home/philipp/GitRStudioServer/Workflow_code/settings.yml
+Working_folder_path: /home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/annotations/
+Annotation_path: /home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/annotations/instances_default.json
+Images_path: /home/philipp/GitRStudioServer/ImageData/SimonaRelabelled/images/SimonaAig21d/
+
+### Scale has 3 modes 0 for no scale (uses the standard value), 
+### 1 for only scale, 2 for different scales in you dataset
+
+Standard_value_px_per_µm: 2.8
+Scale_param: 2
+
+### Tesseract detection mode
+psm_mode: 7
+
