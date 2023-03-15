@@ -28,14 +28,15 @@ def ShowMeasureImage(Imagepath, data, visualize): ### Input the dataframe and 1 
     print("no visualization mode")
   elif visualize == True:
     #### Mode True visualize a single Image or a list of Images and save them
-    save_folder = Imagepath[x].split("/")[:-1] + "Measurement_Visualization"
+    data = pd.read_csv(data)
+    save_folder = Imagepath.split("/")[-2] + "_Measurement_Visualization"
     os.mkdir(save_folder)
     plt.clf()
-    plt.figure(figsize = (2560,1600))
+    plt.figure()
     if type(Imagepath) != list: ## Make a list if only one Image is submitted
       Imagepath = [Imagepath]
     
-    for x in Imagepath:
+    for x in range(len(Imagepath)):
       im = plt.imread(Imagepath[x])
       plt.imshow(im)
     
@@ -43,8 +44,8 @@ def ShowMeasureImage(Imagepath, data, visualize): ### Input the dataframe and 1 
     ### split the path:
   
       filename = Imagepath[x].split("/")[-1]
-     
-      Image_index = data.index[data['image_id'] == filename]
+      
+      Image_index = data.index[data['Name'] == filename]
       Image_index = Image_index[0] ## Make Int64IndexSeries of one number into a number
       ### Body with still needs to implemented
       ### Plot the lines
@@ -70,7 +71,7 @@ path = path = settings["Images_path"]
 save = settings["Working_folder_path"] + "Datafinished.csv"
 
 #Paths_of_Images, Name_of_Images = Images_list(path)
-DataFrame = FuseDataframes(dfPixel, dfScales, save)
-#ShowMeasureImage(DataFrame,True)
+#DataFrame = FuseDataframes(dfPixel, dfScales, save)
+ShowMeasureImage("/home/philipp/GitRStudioServer/ImageData/SimonaPredict/visualization/Aig Cellulose 5000 83.jpg",settings["Working_folder_path"] + "Datafinished.csv",True)
 
 

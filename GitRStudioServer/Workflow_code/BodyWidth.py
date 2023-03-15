@@ -43,10 +43,10 @@ def RotatedImages(Imagenames):
   rotated_image_list = []
   counting_list_of_errors = []
   for name in Image_Names:
-  
+    #print(name)
     img = cv2.imread(name)
     nbg = remove(img)
-    
+    #print(name)
   
     # Convert image to binary mask black and white
     gray = cv2.cvtColor(nbg, cv2.COLOR_BGRA2GRAY)
@@ -60,6 +60,7 @@ def RotatedImages(Imagenames):
     # Find all the contours in the thresholded image
     contours, _ = cv2.findContours(binary_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     rotation = []
+    
     for i, c in enumerate(contours):
     
       area = cv2.contourArea(c)
@@ -72,13 +73,19 @@ def RotatedImages(Imagenames):
     ### falsely detected part
     
     OnlyValue = NonRightAngles(rotation)
-    print(OnlyValue)
+    #print(OnlyValue)
     counting_list_of_errors.append(OnlyValue[0])
     ### How do we safe image
+    ### For later it will be beneficial to have a daphnid that is over 0 in every pixel
+    ### That is why set everythin in the contours to 256
+    color = [255, 255, 255]
+    stencil = binary_mask
+    cv2.fillPoly(stencil, contours, color)
+    Filled = cv2.bitwise_and(binary_mask, stencil)
     
     ### Takes long we will just save the images
     ### Make list of images
-    rotated_image_list.append(ndimage.rotate(binary_mask, 180-int(OnlyValue[0])))
+    rotated_image_list.append(ndimage.rotate(Filled, 180-int(OnlyValue[0])))
   return(rotated_image_list)
 
 def NonRightAngles(liste):
@@ -116,7 +123,7 @@ def getOrientation(pts, img):
  
   # Store the center of the object
   cntr = (int(mean[0,0]), int(mean[0,1]))
-  print(cntr, "Cntr print")
+  #print(cntr, "Cntr print")
   ## [pca]
  
   ## [visualization]
@@ -175,7 +182,7 @@ def getDaphnidlength(StraightCutDaphnids):
     import numpy as np
     ### Find the index row where the line is the longest
     ### 
-    print(x)
+    #print(x)
     columns = np.copy(RotatedCutImages[x][:, ::50]) ### take every 50th column
     #np.shape(RotatedCutImages[0][:, ::50])
     #np.shape(RotatedCutImages[0])
@@ -203,38 +210,74 @@ def getDaphnidlength(StraightCutDaphnids):
   #### Plot the line into the image
 
 def DaphnidWidth(coordinates, RotatedCutImages):
+  import numpy as np
+  from matplotlib import pyplot as plt
+  
   body_width_px = []
+  
   for x in range(len(RotatedCutImages)):
+    
+    plt.clf()
+    plt.imshow(RotatedCutImages[x])
+    
     upper_third = int(coordinates[x][0] + (coordinates[x][1] - coordinates[x][0]) * 1/3)
     lower_third = int(coordinates[x][1] - (coordinates[x][1] - coordinates[x][0]) * 1/3)
     
-    #### Get upper measurement ### We aviod a nested for loop for readability
-    ####
+    Thirds = (upper_third, lower_third)
+    #### Get upper measurement ### We avoid a nested for loop for readability
+    #### We measure from the outside on the upper third until we reach the daphnid
+    #### We then want to find the midpoint of these two coordinates
+    #### and measure from the inside
+    #### We have to split the image on the centre point and measure the flipped left and
+    #### normal right half and add them together
+    #### This lets us avoid to detect extremities on the outside
+    #######################################################################################
+    body_width_temp = []
     
-    row_upper_third = RotatedCutImages[x][upper_third,:]
-    row_upper_thirdLeft = np.argmax(row_upper_third > 100)
-    row_upper_thirdRight = len(row_upper_third) - np.argmax(np.flip(row_upper_third > 100))
-    upper_body_width_px = row_upper_thirdRight - row_upper_thirdLeft
+    for y in range(len(Thirds)):
+      
+      row = RotatedCutImages[x][Thirds[y],:] 
+      row_Left = np.argmax(row > 100) ## get the start coordinate of the body on the left
+      row_Right = len(row) - np.argmax(np.flip(row > 100)) ## get the end 
+      
+      ### find the halfway coordinate between left and Right
+      # Cut the image into left and right along the middle of the outsides we found
+      row_middle = round((row_Right + row_Left)/2)
+      
+      left_half = RotatedCutImages[x][:, :row_middle]
+      right_half = RotatedCutImages[x][:, row_middle:]
+      
+      #### Find the values for the split daphnid
+      
+      row_middle_to_left = np.argmax(np.flip(left_half[Thirds[y],:]  == 0))
+      row_middle_to_right = np.argmax(right_half[Thirds[y],:]  == 0)
+      
+      ### No we want to translate the the points back to our old image
+      ### right coordinate would be the row_upper_third_middle_to_right
+      ### + width of the left half
+      
+      coor_right = len(left_half[Thirds[y],:]) + row_middle_to_right
+      
+      ### the left coordinate the width of left box - row_upper_third_middle_to_right we found
+      coor_left = len(left_half[Thirds[y],:]) - row_middle_to_left
+      
+      ### The length is the difference between these left and rigth
+      body_width_temp.append(coor_right - coor_left) 
+      
+      plt.plot(coor_left, Thirds[y], coor_right, Thirds[y], marker = 'o', ls = '-')
+      ######################################################################### right
     
-    row_lower_third = RotatedCutImages[x][lower_third,:]
-    row_lower_thirdLeft = np.argmax(row_lower_third > 100)
-    row_lower_thirdRight = len(row_lower_third) - np.argmax(np.flip(row_lower_third > 100))
-    lower_body_width_px = row_lower_thirdRight - row_lower_thirdLeft
-    
-    if lower_body_width_px >= upper_body_width_px:
-      body_width_px.append(lower_body_width_px)
+    plt.show()  
+    if body_width_temp[0] >= body_width_temp[1]:
+      body_width_px.append(body_width_temp[0])
     else:
-      body_width_px.append(upper_body_width_px)
-    #### Draw a symbolic image
+      body_width_px.append(body_width_temp[1])
+      #### Draw a symbolic image
     from matplotlib import pyplot
-    plt.clf()
-    plt.imshow(RotatedCutImages[x])
-    plt.plot(row_lower_thirdLeft, lower_third, row_lower_thirdRight, lower_third, marker = 'o', ls = '-')
-    plt.plot(row_upper_thirdLeft, upper_third, row_upper_thirdRight, upper_third, marker = 'x', ls = '-')
-    plt.show()
     
   return body_width_px
-    #### PRELIMINAIRY: We take the longer line as width. Optimally we would take the line
+    
+    ## PRELIMINAIRY: We take the longer line as width. Optimally we would take the line
     ## closer to the eye (Furca movement). We also need to consider extremities incresing width
     ## as well as intestines being 0 values and fragments 
     ## All of this depends on rembg and preprocessing of the image -> we could set small islands of pixels 0
@@ -248,9 +291,16 @@ line_cor = getDaphnidlength(RotatedCutImages)
 body_widths = DaphnidWidth(line_cor, RotatedCutImages)
 
 import cv2 as cv2
+from matplotlib import pyplot as plt
 img_S = cv2.imread(Image_Names[98])
 plt.clf()
 plt.imshow(img_S)
 plt.plot(body_widths)
-plt.show()
+plt.savefig("Test")
+
+### Tasks left: Increase sharpness (maybe with different rembg model to exclude arms more) OR fit on Daphnid shape?
+### Make width calculation dependent on Eye
+### Make Body width calculation based on continuus measurment
+### Doesn't work why
+
 
